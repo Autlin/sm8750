@@ -12,6 +12,7 @@ on:
           - 'oneplus_13t'
           - 'oneplus_pad_2_pro'
           - 'oneplus_ace5_ultra'
+          - 'realme_GT7'
           - 'realme_GT7pro'
           - 'realme_GT7pro_Speed'
         default: 'oneplus_ace5_pro'
@@ -89,29 +90,80 @@ jobs:
               echo "DEVICES_NAME=${{ github.event.inputs.REPO_MANIFEST }}" >> $GITHUB_ENV
               ;;
           esac
-
-      - name: ⚙️ Set KERNEL_TIME (设置构建时间)
-        id: set_kernel_time
-        run: |
-          if [ "$KEEP_ORIGINAL" = "false" ] && [ -n "$CUSTOM_TIME" ]; then
+          case "${{ github.event.inputs.REPO_MANIFEST }}" in
+            oneplus_13 | oneplus_ace5_pro)
+              echo 'DEFAULT_SUFFIX=-android15-8-g4dc61d72e02f-abogki415959920-4k' >> $GITHUB_ENV
+              ;;
+            realme_GT7pro_Speed)
+              echo 'DEFAULT_SUFFIX=-android15-8-g013ec21bba94-abogki383916444-4k' >> $GITHUB_ENV
+              ;;
+            realme_GT7)
+              echo 'DEFAULT_SUFFIX=-android15-8-g06c41a4a6e98-abogki395793266-4k' >> $GITHUB_ENV
+              ;;
+            realme_GT7pro)
+              echo 'DEFAULT_SUFFIX=-android15-8-gc6f5283046c6-ab12364222-4k' >> $GITHUB_ENV
+              ;;
+            oneplus_13t)
+              echo 'DEFAULT_SUFFIX=-android15-8-gd43086512890-abogki423825152-4k' >> $GITHUB_ENV
+              ;;
+            oneplus_pad_2_pro)
+              echo 'DEFAULT_SUFFIX=-android15-8-g7b1f455c7143-ab13591283-4k' >> $GITHUB_ENV
+              ;;
+            oneplus_ace5_ultra)
+              echo 'DEFAULT_SUFFIX=-android15-8-g29d86c5fc9dd-abogki428889875-4k' >> $GITHUB_ENV
+              ;;
+          esac
+          if [ "${{ github.event.inputs.keep_original_settings }}" = "false" ] && [ -n "${{ github.event.inputs.custom_kernel_suffix }}" ]; then
             echo "使用自定义构建时间: $CUSTOM_TIME"
             echo "KERNEL_TIME=$CUSTOM_TIME" >> $GITHUB_ENV
           else
-            case "$DEVICES_NAME" in
-              oneplus_13 | oneplus_ace5_pro | realme_GT7pro | realme_GT7pro_Speed)
+            case "${{ github.event.inputs.REPO_MANIFEST }}" in
+              oneplus_13 | oneplus_ace5_pro)
+                echo 'KERNEL_TIME=Mon May 12 09:09:59 UTC 2025' >> $GITHUB_ENV
+                ;;
+              realme_GT7pro_Speed)
                 echo 'KERNEL_TIME=Tue Dec 17 23:36:49 UTC 2024' >> $GITHUB_ENV
                 ;;
+              realme_GT7)
+                echo 'KERNEL_TIME=Mon Jan 20 03:24:58 UTC 2025' >> $GITHUB_ENV
+                ;;
+              realme_GT7pro)
+                echo 'KERNEL_TIME=Fri Sep 13 02:08:57 UTC 2024' >> $GITHUB_ENV
+                ;;
               oneplus_13t)
-                echo 'KERNEL_TIME=FriApr 25 01:56:53 UTC 2025' >> $GITHUB_ENV
+                echo 'KERNEL_TIME=Tue Jun 10 12:12:23 UTC 2025' >> $GITHUB_ENV
                 ;;
               oneplus_pad_2_pro)
-                echo 'KERNEL_TIME=Wed Dec 11 19:16:38 UTC 2024' >> $GITHUB_ENV
+                echo 'KERNEL_TIME=Tue Jun  3 03:22:33 UTC 2025' >> $GITHUB_ENV
                 ;;
               oneplus_ace5_ultra)
-                echo 'KERNEL_TIME=Fri Apr 18 19:35:07 UTC 2025' >> $GITHUB_ENV
+                echo 'KERNEL_TIME=Tue Jul  1 19:48:18 UTC 2025' >> $GITHUB_ENV
                 ;;
             esac
           fi
+
+#      - name: ⚙️ Set KERNEL_TIME (设置构建时间)
+#        id: set_kernel_time
+#        run: |
+#          if [ "$KEEP_ORIGINAL" = "false" ] && [ -n "$CUSTOM_TIME" ]; then
+#            echo "使用自定义构建时间: $CUSTOM_TIME"
+#            echo "KERNEL_TIME=$CUSTOM_TIME" >> $GITHUB_ENV
+#          else
+#            case "$DEVICES_NAME" in
+#              oneplus_13 | oneplus_ace5_pro | realme_GT7pro | realme_GT7pro_Speed)
+#                echo 'KERNEL_TIME=Tue Dec 17 23:36:49 UTC 2024' >> $GITHUB_ENV
+#                ;;
+#              oneplus_13t)
+#                echo 'KERNEL_TIME=FriApr 25 01:56:53 UTC 2025' >> $GITHUB_ENV
+#                ;;
+#              oneplus_pad_2_pro)
+#                echo 'KERNEL_TIME=Wed Dec 11 19:16:38 UTC 2024' >> $GITHUB_ENV
+#                ;;
+#              oneplus_ace5_ultra)
+#                echo 'KERNEL_TIME=Fri Apr 18 19:35:07 UTC 2025' >> $GITHUB_ENV
+#                ;;
+#            esac
+#          fi
 
       - name: ⚙️ Set device-specific CCACHE_DIR (设置对应机型Cceche路径)
         run: |
@@ -148,8 +200,8 @@ jobs:
           mkdir -p "$APT_CACHE_DIR/lists/partial"
           sudo apt -o Dir::Cache="$APT_CACHE_DIR" update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt -o Dir::Cache="$APT_CACHE_DIR" install -yq --no-install-recommends \
-            python3 git curl ccache libelf-dev \
-            build-essential flex bison libssl-dev \
+            python3 p7zip-full git curl ccache libelf-dev \
+            build-essential libelf-dev flex bison libssl-dev \
             libncurses-dev liblz4-tool zlib1g-dev \
             libxml2-utils rsync unzip
           
@@ -338,28 +390,10 @@ jobs:
 
       - name: 🔧 Set Kernel name (设置内核名称)
         env:
-          REPO_MANIFEST: ${{ github.event.inputs.REPO_MANIFEST }}
           KEEP_ORIGINAL: ${{ github.event.inputs.keep_original_settings }}
           CUSTOM_SUFFIX: ${{ github.event.inputs.custom_kernel_suffix }}
         run: |
           cd kernel_workspace/kernel_platform
-
-          case "$DEVICES_NAME" in
-            oneplus_13 | oneplus_ace5_pro | realme_GT7pro | realme_GT7pro_Speed)
-              DEFAULT_SUFFIX="-android15-8-g013ec21bba94-abogki383916444-4k"
-              ;;
-            oneplus_13t)
-              DEFAULT_SUFFIX="-android15-8-gba3bcfd39307-abogki413159095-4k"
-              ;;
-            oneplus_pad_2_pro)
-              DEFAULT_SUFFIX="-android15-8-g0261dbe3cf7e-ab12786384-4k"
-              ;;
-            oneplus_ace5_ultra)
-              DEFAULT_SUFFIX="-android15-8-gfc70d29746a7-abogki412262948-4k"
-              ;;
-          esac
-          
-          echo "当前机型: $DEVICES_NAME"
           echo "保持原设置: $KEEP_ORIGINAL"
           echo "自定义后缀: $CUSTOM_SUFFIX"
           echo "默认后缀: $DEFAULT_SUFFIX"
